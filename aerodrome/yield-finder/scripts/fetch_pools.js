@@ -10,9 +10,9 @@ const RPC_URL = process.env.RPC_URL || 'https://mainnet.base.org';
 
 // Known stablecoin/major token prices for TVL estimation (fallback)
 const KNOWN_PRICES = {
-    '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913': 1.0, // USDC
-    '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb': 1.0, // DAI
-    '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA': 1.0, // USDbC
+    '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913': 1.0, // USDC
+    '0x50c5725949a6f0c72e6c4a641f24049a917db0cb': 1.0, // DAI
+    '0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca': 1.0, // USDbC
 };
 
 // ABI for Sugar.all
@@ -38,10 +38,7 @@ async function fetchPrices() {
     }
 }
 
-// Helper to format large numbers
-function formatUSD(val) {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
-}
+
 
 // Helper to parse arguments
 function parseArgs() {
@@ -85,7 +82,11 @@ async function main() {
 
         console.error(`Fetched ${pools.length} pools. Processing...`);
 
-        const processedPools = pools.map(pool => {
+        // Filter out pools with dead gauges
+        const activePools = pools.filter(pool => pool.gauge_alive);
+        console.error(`Active pools: ${activePools.length}`);
+
+        const processedPools = activePools.map(pool => {
             let tvlUSD = 0;
 
             const t0 = pool.token0.toLowerCase();
@@ -141,7 +142,7 @@ async function main() {
                 tvl: tvlUSD,
                 apr: apr,
                 emissionsPerYear: emissionsPerYear,
-                type: pool.type === 0 ? 'Volatile' : (pool.type === 1 ? 'Stable' : 'Concentrated')
+                type: pool.type === 0n ? 'Volatile' : (pool.type === 1n ? 'Stable' : 'Concentrated')
             };
         });
 

@@ -1,3 +1,4 @@
 node_modules/
 package-lock.json
-*.log
+
+COMMIT_MESSAGE.txt
