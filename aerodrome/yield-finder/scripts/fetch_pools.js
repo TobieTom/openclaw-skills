@@ -8,12 +8,7 @@ const CBBTC_ADDRESS = '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf'; // cbBTC on 
 const WETH_ADDRESS = '0x4200000000000000000000000000000000000006'; // WETH on Base
 const RPC_URL = process.env.RPC_URL || 'https://mainnet.base.org';
 
-// Known stablecoin/major token prices for TVL estimation (fallback)
-const KNOWN_PRICES = {
-    '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913': 1.0, // USDC
-    '0x50c5725949a6f0c72e6c4a641f24049a917db0cb': 1.0, // DAI
-    '0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca': 1.0, // USDbC
-};
+
 
 // ABI for Sugar.all
 const SUGAR_ABI = parseAbi([
@@ -94,28 +89,26 @@ async function main() {
 
             // Helper to get partial USD value
             const getVal = (addr, amount) => {
-                // Known stablecoins
-                if (KNOWN_PRICES[addr])
-                    return Number(amount) / 1e6 * KNOWN_PRICES[addr]; // Use 1e6 for known stables (USDC/USDbC)? Wait, DAI is 18.
-                // Let's refine KNOWN_PRICES logic or keep it simple for established stables.
-                // USDC/USDbC are 6 decimals. DAI is 18.
-                // To be safe, let's explicit check.
-
-                if (addr === '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913') // USDC
+                // USDC - 6 decimals
+                if (addr === '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913')
                     return Number(amount) / 1e6;
-                if (addr === '0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca') // USDbC
+                // USDbC - 6 decimals  
+                if (addr === '0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca')
                     return Number(amount) / 1e6;
-                if (addr === '0x50c5725949a6f0c72e6c4a641f24049a917db0cb') // DAI
+                // DAI - 18 decimals
+                if (addr === '0x50c5725949a6f0c72e6c4a641f24049a917db0cb')
                     return Number(amount) / 1e18;
-
+                // WETH - 18 decimals
                 if (addr === WETH_ADDRESS.toLowerCase())
                     return Number(amount) / 1e18 * prices.eth;
+                // AERO - 18 decimals
                 if (addr === AERO_TOKEN_ADDRESS.toLowerCase())
                     return Number(amount) / 1e18 * prices.aero;
+                // cbBTC - 8 decimals
                 if (addr === CBBTC_ADDRESS.toLowerCase())
-                    return Number(amount) / 1e8 * prices.btc; // cbBTC is 8 decimals
+                    return Number(amount) / 1e8 * prices.btc;
 
-                return 0;
+                return 0; // Unknown token
             };
 
             // If we know price of one token, we can double it for TVL (roughly 50/50 in V2/active V3)
@@ -142,7 +135,7 @@ async function main() {
                 tvl: tvlUSD,
                 apr: apr,
                 emissionsPerYear: emissionsPerYear,
-                type: pool.type === 0n ? 'Volatile' : (pool.type === 1n ? 'Stable' : 'Concentrated')
+                type: Number(pool.type) === 0 ? 'Volatile' : (Number(pool.type) === 1 ? 'Stable' : 'Concentrated')
             };
         });
 
