@@ -124,9 +124,15 @@ async function main() {
             const emissionsPerYear = Number(pool.emissions) / 1e18 * 31536000;
             const annualRewardUSD = emissionsPerYear * prices.aero;
 
+            // Calculate STAKED TVL (for APR calculation)
+            const staked0USD = getVal(t0, pool.staked0);
+            const staked1USD = getVal(t1, pool.staked1);
+            const stakedTVL = staked0USD + staked1USD;
+
+            // APR is based on STAKED liquidity only
             let apr = 0;
-            if (tvlUSD > 0) {
-                apr = (annualRewardUSD / tvlUSD) * 100;
+            if (stakedTVL > 0) {
+                apr = (annualRewardUSD / stakedTVL) * 100;
             }
 
             return {
@@ -135,7 +141,7 @@ async function main() {
                 tvl: tvlUSD,
                 apr: apr,
                 emissionsPerYear: emissionsPerYear,
-                type: Number(pool.type) === 0 ? 'Volatile' : (Number(pool.type) === 1 ? 'Stable' : 'Concentrated')
+                type: Number(pool.type) === 0 ? 'Stable' : (Number(pool.type) === -1 ? 'Volatile' : 'Concentrated')
             };
         });
 
